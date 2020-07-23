@@ -1,0 +1,133 @@
+---
+title: "St. Petersburg Paradox"
+author: "Boyar F."
+date: "7/21/2020"
+output: html_document
+---
+
+### What is St. Petersburg Paradox?
+The St. Petersburg Paradox is a game that supposedly has infinite expected value. It is introduced by famous mathematician Nicolaus Bernoulli in 1713. The game is played as follows: A fair coin is flipped until it comes up heads the first time (some versions say that until it comes up tails for the first time, but it doesn’t matter anyways). At that point, player wins \$2 to the power of tails. For instance if you flip 3 tails in a row, and flip a heads at the 4th flip, you will win \$2^3 which is \$8. If you flip 10 tails in a row, you will win \$2^10, which is \$1024.
+
+The game looks pretty simple but how this is a paradox in decision theory, especially in expected value concept? As we know, expected value of a decision or a game is calculated by the event probability times the award. Let’s assume a different game with a fair die. If you roll an even number, you will win \$6 and if you roll an odd number you will win \$4. The probability that you get an even number is 1/2, and for the odd number is the same, 1/2.
+
+$$P(Even Number)=({2},{4},{6})/({1},{2},{3},{4},{5},{6} )=3/6=1/2$$
+
+$$P(Odd Number)=({1},{3},{5})/({1},{2},{3},{4},{5},{6} )=3/6=1/2$$
+
+As we can see, probabilities are the same but the rewards are different. We ‘expect’ these values from the game:
+
+```{r}
+# Summary of the aforementioned dice rolling game:
+data.frame(Even_Number = c("1/2", "$6", "1/2 * $6 = $3"), Odd_Number = c("1/2", "$4", "1/2 * $4 = $2"), 
+           row.names = c("Probabilities:", "Awards:", "Expected_Value:"))
+```
+
+The total expected value of this game is \$5. If you pay \$5 to play this game, it’s called a “fair game”. Pure chance will determine (whatever that means) if you win or lose. But on the long run, you will be very close to earning nothing. If player is asked to pay \$6 to play this game, the odds are against the player and the player should reject playing such a game. If player is asked to pay \$4 to play this game, player should accept this game. Even if you lose some money in a few games, you will definitely get rich on the long run. 
+Intuition of this seems nice and simple. But let’s work on Bernoulli’s game with the same calculation. 
+
+It’s easy to calculate the expected value of the game. Probability of a fair coin coming up tail is 1/2.
+
+2 tails in a row: $1/2 * 1/2 = 1/4$ 
+
+3 tails in a row: $1/2 * 1/2 * 1/2 = 1/8$ and so on. 
+
+Therefore, the expected value of the game is:
+    
+$$(1/2)*2 + (1/4)*4 + (1/8)*8 + ⋅ ⋅ ⋅ = 1 + 1 + 1 + ⋅ ⋅ ⋅$$
+$$= ∞$$
+
+So, is the expected value of this game infinite? (On some opinions it is not infinity but it approaches to infinity, although I can’t dive into mathematical speculative discussions for now, it’s still a predicament on expected value.) How much should you pay to make this game fair, an infinite number? Does this mean that whatever you pay, you will get rich on the long run? We can ask some practical questions also, like whom or which casino can promise an infinite number of money? If rationality that uses expected value suggests we should pay any amount to play this game, being rational doesn’t seem like being rational. 
+
+In those years, mathematicians came up with different solutions. From those, we can see that “expected utility” is emerging. Cramér proposed a solution in a letter consisting of a different approach to monetary value. He pointed out that a rational person should not guided by monetary value but the “usage” of that value. According to Cramér, twenty million is not worth more than ten million, because ten million is enough for satisfying all desires an agent may reasonably have. With this idea, we can also infer that marginal utility decreases. Also, from his letters we know that Bernoulli reached a similar idea to the problem, not knowing Cramér’s beforehand.
+
+One interesting approach to the game is just playing the game (yes, I guess just simply doing it is an interesting idea for such a game). 18th century naturalist and mathematician Compte de Buffon did this and played the game 2048 times. Actually he informs us that he achieved this by having a coin thrown into the air by a child. We now have tremendously fast data organizers under our hands and we don’t have to pay a kid to do stuff for us. Let’s just dig into the simulation.
+
+### Simulating The St. Petersburg Paradox
+
+```{r}
+coin <- c("TAILS","HEADS")
+coin # Our coin is defined as a vector.
+```
+
+```{r}
+sample(coin, replace = TRUE, size = 1, prob = c(0.5, 0.5)) 
+# It's actually sampling a coin with equal chance, one of them is heads and another is tails. 
+# Chances are the same so lets infer this as flipping a fair coin.
+```
+
+```{r}
+# Assume that we can go further 1 millionth time. 
+# Getting tails more than a million time in a row is extremely low, so I'm omitting this and move on.
+# ‘one.game’ is a NULL vector which we will append the award.
+N <- 1000000
+one.game <- c(0)
+```
+
+```{r}
+set.seed(2022)
+for (i in 1:N) {
+  if(sample(coin, replace = TRUE, size = 1, prob = c(0.5, 0.5)) == "TAILS" )
+  {one.game <- 2^i} else {break}
+} ; if(i == 1) {one.game <- 0} ; cat("AWARD:", one.game, "\n") ; cat("TAILS:", i-1, "\n")
+```
+
+Our for loop breaks if the flip doesn’t come up tails. If it breaks in the first iteration, our reward will be zero. We know how many tails came up before the game ended, which is the i th iteration minus one (last iteration is when the coin comes up heads). For this game it came up {TAILS, TAILS, HEADS} and our reward is \$2^2 = \$4. Let’s play another one.
+
+```{r}
+set.seed(2021)
+for (i in 1:N) {
+  if(sample(coin , replace = TRUE , size = 1 , prob = c(0.5, 0.5)) == "TAILS" )
+  {one.game <- 2^i} else {break}
+} ; if(i == 1) {one.game <- 0} ; cat("AWARD:" , one.game , "\n") ; cat("TAILS:" , i-1 , "\n")
+```
+
+This time it came up heads at the first flip.
+### Simulating 100,000 Games
+Playing a single game like this doesn’t tell us much. Buffon played 2048 times and made some inferences with it. We can simulate 100,000 games in a few seconds, and take a sum or mean of the awards for all of those games. To simulate this, I have nested another for loop. ‘sim’ is the simulation number and ‘result’ is a 100,000 row, 1 column matrix that will collect the outcome.
+
+```{r}
+sim <- 100000
+result <- matrix(data = 0, nrow = sim, ncol = 1)
+
+for (j in 1:sim) {
+  set.seed(j) 
+    #I'm setting the seed for every simulation. This would be helpful for retrospective inquiries.
+  for (i in 1:N) {
+    if(sample(coin , replace = TRUE , size = 1 , prob = c(0.5, 0.5)) == "TAILS" )
+    {result[j,1] <- 2^i} else{break}
+  } ; if(i == 1) {result[j,1] <- 0} ;
+}
+
+cat(" Average Reward:", mean(result), "\n", 
+    "Average Tails in a row:", floor(log2(mean(result))))
+```
+
+After one hundred thousand games, (if you can flip a coin in 5 seconds and end a single game, doing it non-stop, it will take about 5.7 days) we have average of \$7.72 per game. This means the coin came up 3 tails in a row per flip in average.
+
+We can infer that if we paid, for instance \$10 per game, we could lose lots of money. If we paid, \$7 per game, we could win \$72,000. But this inference comes from only 1 separate hundred-thousand-game-simulations. Some other simulation may differ from these results.
+
+```{r}
+library(dplyr)
+df.result <- as.data.frame(result)
+max_reward <- df.result[which.max(df.result$V1),]
+max_tails <- log2(df.result[which.max(df.result$V1),])
+
+cat("Maximum reward:", max_reward, "\n", 
+    "Maxumum tails in a row:", max_tails, "\n")
+# We can find out how much is the maximum reward and how many tails in a row that means.
+
+heads <- nrow(df.result %>% filter(V1 == 0)) 
+cat("Heads comes up at the first try:", heads, "times")
+# As we expect, about half of the time we get heads for the first try.
+```
+
+There are different philosophical and technical solutions for the game. Interpreting this results is not a concrete solution, it’s more like what Buffon did, but we now have tremendous number of trials. So after my experiment, I won’t suggest that you pay more than $7 for the game. The experiment is actually a simulation but at the end, it’s still real, even immunized from human error (at least after you run the codes). I think it’s a pleasure to see that we can try this game one hundred thousand times in a few seconds with the help of our machines and I hope the curious readers enjoyed this as much as I did. Thank you for reading all. I'm always open for critique and suggestions. I consider myself a beginner and I believe in learning with doing it.
+
+### References
+“The St. Petersburg Paradox”, Stanford Encyclopedia of Philosophy 
+
+(Web: https://plato.stanford.edu/entries/paradox-stpetersburg/)
+
+Klyve, D., & Lauren, A. (2011). An empirical approach to the St. Petersburg paradox. The College Mathematics Journal, 42(4), 260–264.
+
+(Web: https://pdfs.semanticscholar.org/a9a9/cf3cbf5dc9268ab04de604ad65d7eeb7692f.pdf)
